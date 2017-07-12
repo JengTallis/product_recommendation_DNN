@@ -13,7 +13,7 @@ parse the CSV file and output a new CSV file with cleaned-up records.
 
 The following fields are removed:
 
-9. indrel 
+09. indrel 
 10. ult_fec_cl_1t
 13. indresi
 15. conyuemp
@@ -105,14 +105,14 @@ int main(int argc, char *argv[])
 
 				if((i+a+b != 9) && (i+a+b != 10) && (i+a+b != 13) && (i+a+b != 17) && (i+a+b != 19)){
 					//if (flag>0)
-						printf("\tField # %d == %s\n",i,arr[i]);
+						//printf("\tField # %d == %s\n",i,arr[i]);
 				
 					fprintf(fp,",%s ",arr[i]); /* string */
 				}
 
 				else{
 					//if (flag>0)
-						printf("\t kill Field # %d == %s\n",i,arr[i]);
+						//printf("\t kill Field # %d == %s\n",i,arr[i]);
 				}
 
 				/*
