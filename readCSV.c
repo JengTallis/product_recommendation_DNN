@@ -47,20 +47,20 @@ int main(int argc, char *argv[])
 
 
 	/* Read the original csv file */
-	int head = 0;
+	//int head = 0;
 	while(fgets(tmp, sizeof(tmp),in) != 0) /* read a record */
 	{
 	    int i = 0;
 	    recordcnt++;
-		//printf("Record #: %d\n",recordcnt);
+	    //if(head < 8)
+			printf("Record #: %d\n",recordcnt);
 
 		parse(tmp,",",arr,&fldcnt);    /* dissemble record into fields */
 		for(i = 0; i < fldcnt; i++){                              
-			if(head < 2)
+			//if(head < 8)
 				printf("\tField # %d == %s\n",i,arr[i]); /* print each field */
 		}
-
-		head++;
+		//head++;
 	}
 
 	/* Close the original csv file */

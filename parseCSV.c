@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 		head++;
 		recordcnt++;
 		fprintf(fp, "\n");
-		fprintf(fp, ",");
+		fprintf(fp, ", ");
 	}
 
 	/* Read the original csv file */
