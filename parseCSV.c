@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 							"juniorAcnt", "moreParticularAcnt", "particularAcnt", "particularPlusAcnt", "shortDeposit",
 							"mediumDeposit", "longDeposit", "eAcnt", "funds", "mortgage",
 							"pensions", "loans", "taxes", "creditCard", "securities",
-							"homeAcnt", "payroll", "payrollpensions", "directDebit"};
+							"homeAcnt", "payroll", "payrollPensions", "directDebit"};
 	// char header[NUMFLDS][MAXFLDSIZE]={0x0};
 	// int c = 0;
 	// for(c = 0; c < NUMFLDS; c++){
@@ -85,12 +85,14 @@ int main(int argc, char *argv[])
 
 	/* print header row */
 	if(fgets(tmp, sizeof(tmp),in) != 0){
+		fprintf(fp, ",");
 		for(i = 0; i < NUMFLDS; i++){
 			fprintf(fp, " %s, ", headers[i]);
 		}
 		head++;
 		recordcnt++;
 		fprintf(fp, "\n");
+		fprintf(fp, ",");
 	}
 
 	/* Read the original csv file */
@@ -104,12 +106,12 @@ int main(int argc, char *argv[])
 	    recordcnt++;
 		//printf("Record #: %d\n",recordcnt);
 		//fprintf(fp,"\n");
-		fprintf(fp, "\t");
+		//fprintf(fp, "\t");
 
 		parse(tmp, ",", arr, &fldcnt);    /* dissemble record into fields */
 		if (head != 0) // data rows
 		{
-			if(fldcnt >= 45 ){ /* a complete record has >=45 (48) fields */
+			if(fldcnt >= 45){ /* a complete record has >=45 (48) fields */ // >=45
 				for(i = 0; i < fldcnt; i++)
 				{                              
 					//printf("\tField # %d == %s\n",i,arr[i]); /* print each field */
@@ -138,11 +140,11 @@ int main(int argc, char *argv[])
 						char* c = arr[i];
 						if(*c - '0'== 0){
 							//printf("\tField # %d == %s\n",i,arr[i]);
-							fprintf(fp, " %s, ", " ");
+							fprintf(fp, " %s, ", "-1");
 						}
 					}
 
-					if((i+a+b != 9) && (i+a+b != 10) && (i+a+b != 13) && (i+a+b != 17) && (i+a+b != 19)){
+					if((i+a+b != 9) && (i+a+b != 10) && (i+a+b != 13) && (i+a+b != 17) && (i+a+b != 19) && (i+a+b != 20)){
 						//printf("\tField # %d == %s\n",i,arr[i]);
 						fprintf(fp," %s, ",arr[i]); /* string */
 					}else{
