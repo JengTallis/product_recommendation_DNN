@@ -5,6 +5,8 @@
 #define MAXFLDS 200     /* maximum possible number of fields */
 #define MAXFLDSIZE 32   /* longest possible field + 1, define a 31 max field */
 
+#define NUMFLDS 42
+
 /* =========================================================================== 
 
 parseCSV.c 
@@ -39,9 +41,26 @@ void parse(char *record, char *delim, char arr[][MAXFLDSIZE],int *fldcnt)
 
 int main(int argc, char *argv[])
 {
+	/* constant headers 18 customer features and 24 products */
+	const char* headers[NUMFLDS] = {"fetchDate", "cusId", "employeeIdx", "cntryOfResidence", "sex", 
+							"age", "FirstContract", "newCusIdx", "seniority", "cusType", 
+							"relationType", "foreignIdx", "chnlEnter", "deceasedIdx", "provCode",
+							"activIdx", "income", "segment", 
+							"savingAcnt", "guarantees", "currentAcnt", "derivativeAcnt", "payrollAcnt",
+							"juniorAcnt", "moreParticularAcnt", "particularAcnt", "particularPlusAcnt", "shortDeposit",
+							"mediumDeposit", "longDeposit", "eAcnt", "funds", "mortgage",
+							"pensions", "loans", "taxes", "creditCard", "securities",
+							"homeAcnt", "payroll", "payrollpensions", "directDebit"};
+	// char header[NUMFLDS][MAXFLDSIZE]={0x0};
+	// int c = 0;
+	// for(c = 0; c < NUMFLDS; c++){
+	// 	strcpy(header[c], headers[c]);
+	// }
+
 	/* Open the original file on cammand line and read it */
 	char tmp[1024] = {0x0};
 	int fldcnt = 0;
+	int i, head = 0;
 	char arr[MAXFLDS][MAXFLDSIZE] = {0x0};
 	int recordcnt = 0;	
 	FILE *in = fopen(argv[1],"r");         /* get input file as command line arg */
@@ -59,15 +78,25 @@ int main(int argc, char *argv[])
 	gets(new_name);
 
 	filename = strcat(new_name,".csv");
-	printf("\n Creating %s.csv file",filename);
+	printf("\n Creating %s file \n",filename);
 	FILE* fp;
  	
 	fp = fopen(filename,"w+");
 
+	/* print header row */
+	if(fgets(tmp, sizeof(tmp),in) != 0){
+		for(i = 0; i < NUMFLDS; i++){
+			fprintf(fp, " %s, ", headers[i]);
+		}
+		head++;
+		recordcnt++;
+		fprintf(fp, "\n");
+	}
+
 	/* Read the original csv file */
 	while(fgets(tmp, sizeof(tmp),in) != 0) /* read a record */
 	{
-	    int i = 0;
+	    i = 0;
 	    int a = 0;
 	    int b = 0;
 	    int flag = 0;
@@ -75,58 +104,52 @@ int main(int argc, char *argv[])
 	    recordcnt++;
 		//printf("Record #: %d\n",recordcnt);
 		//fprintf(fp,"\n");
-		fprintf(fp,"\t");
+		fprintf(fp, "\t");
 
-		parse(tmp,",",arr,&fldcnt);    /* dissemble record into fields */
-		if(fldcnt >= 45 ){ /* a complete record has >=45 (48) fields */
-			for(i = 0; i < fldcnt; i++)
-			{                              
-				//printf("\tField # %d == %s\n",i,arr[i]); /* print each field */
-				//fprintf(fp,",%s ",arr[i]); /* string */
-				if(i == 9){
-					if ((int)atoi(arr[i]) == 1){
-						a = 1;
+		parse(tmp, ",", arr, &fldcnt);    /* dissemble record into fields */
+		if (head != 0) // data rows
+		{
+			if(fldcnt >= 45 ){ /* a complete record has >=45 (48) fields */
+				for(i = 0; i < fldcnt; i++)
+				{                              
+					//printf("\tField # %d == %s\n",i,arr[i]); /* print each field */
+					//fprintf(fp,",%s ",arr[i]); /* string */
+					if(i == 9){
+						if ((int)atoi(arr[i]) == 1){
+							a = 1;
+						}
 					}
-				}
-				if(i+a == 20){
-					char* c = arr[i];
-					c++;
-					//printf("%c\n", *c);
+					if(i+a == 20){
+						char* c = arr[i];
+						c++;
+						//printf("%c\n", *c);
 
-					if(*c - 'A'< 0){
-						//printf("number %c\n", *c);
-						b = 1;
-						flag++;
-					}else{
-						//printf("alphabet %c\n", *c);
-						flag=0;
+						if(*c - 'A'< 0){
+							//printf("number %c\n", *c);
+							b = 1;
+							flag++;
+						}else{
+							//printf("alphabet %c\n", *c);
+							flag=0;
+						}
 					}
-				}
 
-				if((i+a+b != 9) && (i+a+b != 10) && (i+a+b != 13) && (i+a+b != 17) && (i+a+b != 19)){
-					//if (flag>0)
+					if (i+a+b == 22){
+						char* c = arr[i];
+						if(*c - '0'== 0){
+							//printf("\tField # %d == %s\n",i,arr[i]);
+							fprintf(fp, " %s, ", " ");
+						}
+					}
+
+					if((i+a+b != 9) && (i+a+b != 10) && (i+a+b != 13) && (i+a+b != 17) && (i+a+b != 19)){
 						//printf("\tField # %d == %s\n",i,arr[i]);
-				
-					fprintf(fp,",%s ",arr[i]); /* string */
+						fprintf(fp," %s, ",arr[i]); /* string */
+					}else{
+						//if (flag>0)
+							//printf("\t kill Field # %d == %s\n",i,arr[i]);
+					}	
 				}
-
-				else{
-					//if (flag>0)
-						//printf("\t kill Field # %d == %s\n",i,arr[i]);
-				}
-
-				/*
-				if (*arr[i]-'A' > 0)
-					printf("\t Field %d == %d\n", i, (int) *arr[i]);
-				else
-					printf("\t Field %d == %d\n", i,(int) atof(arr[i]));
-				
-				printf("\tField # %d == %f\n",i,(double) atof(arr[i]));
-
-				fprintf(fp, ",%f", (double) atof(arr[i])); // double
-
-				*/
-				
 			}
 		}
 	}

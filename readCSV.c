@@ -31,6 +31,7 @@ void parse(char *record, char *delim, char arr[][MAXFLDSIZE],int *fldcnt)
 
 int main(int argc, char *argv[])
 {
+	
 	/* Open the original file on cammand line and read it */
 	char tmp[1024] = {0x0};
 	int fldcnt = 0;
@@ -46,19 +47,20 @@ int main(int argc, char *argv[])
 
 
 	/* Read the original csv file */
+	//int head = 0;
 	while(fgets(tmp, sizeof(tmp),in) != 0) /* read a record */
 	{
 	    int i = 0;
 	    recordcnt++;
-		printf("Record #: %d\n",recordcnt);
+		//printf("Record #: %d\n",recordcnt);
 
 		parse(tmp,",",arr,&fldcnt);    /* dissemble record into fields */
-		for(i = 0; i < fldcnt; i++)
-			{                              
+		for(i = 0; i < fldcnt; i++){                              
+			//if(head < 2)
 				printf("\tField # %d == %s\n",i,arr[i]); /* print each field */
-				
-			}
+		}
 
+		//head++;
 	}
 
 	/* Close the original csv file */
