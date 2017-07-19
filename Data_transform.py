@@ -1,24 +1,14 @@
-import tensorflow as tf
 import csv
 import datetime as dt
-import numpy
-import matplotlib.pyplot as plt
-
-
-def fieldname(file):
-    with open(file, 'r') as f:
-        inp=csv.reader(f, delimiter= ",", quotechar='|')
-        field = next(inp)
-        return field
 
 def  processData (file):
     with open(file, 'r') as r, open("transformed.csv", 'w', newline='') as wr:
         inp = csv.reader(r, delimiter=",", quotechar='|')
         out = csv.writer(wr, delimiter=",", quotechar='|')
-        i = 0
         fn = next(inp)
         out.writerow(fn)
         for row in inp:
+            i = True
 
             #FetchDate
             format = '%Y-%m-%d'
@@ -99,8 +89,11 @@ def  processData (file):
             for l in range (len(row)-1):
                 if type(row[l]) == str :
                     row[l] = int(float(row[l]))
+                if row[l] < 0:
+                    i = False
 
-            out.writerow(row)
+            if i == True:
+                out.writerow(row)
 
 
 processData("cleansed.csv")

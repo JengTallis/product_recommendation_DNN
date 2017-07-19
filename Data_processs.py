@@ -5,7 +5,7 @@ import numpy
 def CleanData(Input):
     with open(Input, 'r') as f, open ("cleansed.csv", 'w', newline= '') as wr:
         Field = ["FetchDate", "CusID", "EmployeeIdx", "CntyOfResidence", "Sex",    #Fieldnames
-                 "Age", "1stContract", "NewCusIdx", "Seniority ", "CusType",
+                 "Age", "1stContract", "NewCusIdx", "Seniority", "CusType",
                  "RelationType", "ForeignIdx", "ChanEnter", "DeceasedIdx", "ProvCode",
                  "ActivIdx", "Income", "Segment", "SavingAcnt", "Guarantees",
                  "CurrentAcnt", "DerivativesAcnt", "PayrollAcnt", "JuniorAcnt", "MoreParticularAcnt",
