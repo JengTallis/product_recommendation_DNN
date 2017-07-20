@@ -1,10 +1,12 @@
 import tensorflow as tf
+import pandas as pd
 import csv
+import datetime as dt
 import numpy
 
-def CleanData(Input):
+def ProcessData(Input):
     with open(Input, 'r') as f, open ("cleansed.csv", 'w', newline= '') as wr:
-        Field = ["FetchDate", "CusID", "EmployeeIdx", "CntyOfResidence", "Sex",    #Fieldnames
+        fn = ["FetchDate", "CusID", "EmployeeIdx", "CntyOfResidence", "Sex",    #Fieldnames
                  "Age", "1stContract", "NewCusIdx", "Seniority", "CusType",
                  "RelationType", "ForeignIdx", "ChanEnter", "DeceasedIdx", "ProvCode",
                  "ActivIdx", "Income", "Segment", "SavingAcnt", "Guarantees",
@@ -15,7 +17,7 @@ def CleanData(Input):
                  "PayrollPensions", "DirectDebit" ]
         test = csv.reader(f, skipinitialspace=True , delimiter =',', quotechar='|')
         out = csv.writer(wr, delimiter=",", quotechar='|')
-        out.writerow(Field)
+        out.writerow(fn)
         f.readline()
         x = 0
 
@@ -38,6 +40,4 @@ def CleanData(Input):
             if null == False:
                 out.writerow(row)
 
-
-
-CleanData("train_ver2.csv")
+ProcessData("train_ver2.csv")
