@@ -80,7 +80,7 @@ def transform_dt(data):
             row[fields.index('DeceasedIdx')] = DeceasedIdx[row[fields.index('DeceasedIdx')]]
 
             # Income
-            row[fields.index('Income')] = round((float(row[fields.index('Income')])),2)
+            row[fields.index('Income')] = round(float(row[fields.index('Income')]),2)
 
             # Segment
             seg = row[fields.index('Segment')].split(' ')    #  1 - VIP, 2 - Individuals 3 - college graduated

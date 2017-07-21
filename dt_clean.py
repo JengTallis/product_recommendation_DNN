@@ -49,6 +49,7 @@ def clean_dt(data):
             for fld in row:
                 if (fld == '') or (fld == "NA"):
                     incomplete = True
+                    break
 
             # retain complete records
             if not incomplete: 
