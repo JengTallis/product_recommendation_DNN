@@ -27,7 +27,5 @@ def completeData(file):
                     test = []
                     test.append(row)
 
-
-
 sortData("transformed.csv")
 completeData('sorted.csv')
