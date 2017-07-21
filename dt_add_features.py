@@ -1,15 +1,15 @@
-'''
+''' 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 dt_add_features.py
 
 Introduce new features for products and condense the n_months
 
 1. Pair index pattern count over the n_months months (0,0), (0,1), (1,0), (1,1)
 2. Longest same-index chain length (chain length of consecutive 0s), (chain length of consecutive 1)
-
-'''
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+''' 
 
 import csv
-import sys
 
 
 ''' 
@@ -25,11 +25,11 @@ def generate_chunk(reader, chunksize):
 		chunk.append(line)
 	yield chunk
 
+
 '''
 Condense Customer information and add new features:
 Pair index pattern count 
 Longest same-index chain length
-
 '''
 def add_features_dt(data):
 

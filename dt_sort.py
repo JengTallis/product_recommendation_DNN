@@ -1,9 +1,10 @@
 '''
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 dt_sort.py
 
 Sort the data by cusID and then FetchDate
 Remove customer who doesn't have data for every month (join before the first month)
-
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 '''
 
 import operator
