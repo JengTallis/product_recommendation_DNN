@@ -11,7 +11,7 @@ Prepare input data for DNN
 import csv
 
 def  tidy_dt(data):
-	with open(data, 'r', newline='') as rf, open("data.csv", 'w', newline='') as wf:
+	with open(data, 'r', newline='') as rf, open("data2.csv", 'w', newline='') as wf:
 
 		reader = csv.reader(rf, delimiter=",", quotechar='|') # csv_reader
 		writer = csv.writer(wf, delimiter=",", quotechar='|') # csv_writer
@@ -28,4 +28,4 @@ def  tidy_dt(data):
 			del row[1]	# remove CusId
 			writer.writerow(row)
 
-tidy_dt("features.csv")
+tidy_dt("features2.csv")
