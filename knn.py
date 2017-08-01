@@ -10,7 +10,7 @@ import numpy as np
 from sklearn import preprocessing, neighbors, model_selection
 import pandas as pd
 
-rf = pd.read_csv('num.csv')
+rf = pd.read_csv('knn_train.csv')
 rf.drop(['FetchDate','CusID'], axis=1, inplace=True)
 rf.replace('NA', -99999, inplace=True)
 

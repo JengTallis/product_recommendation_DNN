@@ -101,7 +101,6 @@ def add_features_dt(data):
 			# append labels (last month)
 			chunk[n_months-2] = chunk[n_months-2] + chunk[n_months-1][pb_idx:pe_idx+1]
 
-
 			writer.writerow(chunk[n_months-2])
 
 add_features_dt("senior.csv")

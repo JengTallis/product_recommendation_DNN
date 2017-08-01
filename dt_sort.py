@@ -30,4 +30,9 @@ def  sort_dt(data):
 		for row in sort:
 			writer.writerow(row)
 
-sort_dt("num.csv")
+def  sort (data):
+	df = pd.read_csv(data)
+	df = df.sort_values(['CusID','FetchDate'], ascending = [True, False])
+	df.to_csv('sort.csv',index=False, sep = ',', encoding = 'utf-8')
+
+sort("num.csv")
