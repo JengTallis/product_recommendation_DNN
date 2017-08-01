@@ -29,7 +29,7 @@ def checkLast(row, i):
     if int(y) * int(z) == ((i-1)*16):
         return True
 
-def checkPred(row, i):
+def checkPred(row, i):      # to check if month is predicted month
     x = dt.datetime.utcfromtimestamp(float(row[0])*86400)
     y = dt.datetime.strftime(x, '%m')
     z = dt.datetime.strftime(x, '%y')
@@ -95,6 +95,9 @@ def fieldname(file):
             for p in pf:
                 field.append(p + '_' + field[i])
 
+        for i in range(field.index('SavingAcnt'), (field.index('DirectDebit') + 1)):
+            field.append('PR_' + field[i])
+
 
         field.insert(0,field[1])
         del field[2]
@@ -104,43 +107,57 @@ def fieldname(file):
             field[i] = "LM_" + field[i]
         return field
 
+def PFonly (row, field):
+    for i in range (field.index('SavingAcnt')):
+        del row[0]
+    return row
+
 def FeaturizeData (file):
     i = Month()
-    with open(file, 'r') as r, open("featurized.csv", 'w', newline='') as wr:
-        inp = csv.reader(r, delimiter=",", quotechar='|')
-        out = csv.writer(wr, delimiter=",", quotechar='|')
 
-        field = next(inp)
-        header = fieldname(file)
-        out.writerow(header)
-        test = []
-        lst = []
-        pf = []
+with open(file, 'r') as r, open("featurized.csv", 'w', newline='') as wr:
+    inp = csv.reader(r, delimiter=",", quotechar='|')
+    out = csv.writer(wr, delimiter=",", quotechar='|')
 
-        for row in inp:
-            outrow = []
-            if checkLast(row, i) == True:
-                for r in row:
-                    if float(r) % 1 > 0:
-                        lst.append(round(float(r),2))
-                    else:
-                        lst.append(int(float(r)))
-            if checkPred(row, i) == False:
-                test = sameID(row, test)
-            if len(test) == 16:
-                P = []
-                P = PFchange(test, field)
-                for p1 in P:
-                    for p2 in p1:
-                        pf.append(p2)
-                outrow = lst + pf
-                pf = []
-                outrow.insert(0, outrow[1])
-                del outrow[2]
-                outrow[1] = outrow[1] - outrow[6]
-                del outrow[6]
-                out.writerow(outrow)
-                test = []
-                lst = []
+    field = next(inp)
+    header = fieldname(file)
+    out.writerow(header)
 
+    label = []
+    test = []
+    lst = []
+    pf = []
+
+    for row in inp:
+        outrow = []
+        if checkLast(row, i) == True:
+            for r in row:
+                if float(r) % 1 > 0:
+                    lst.append(round(float(r),2))
+                else:
+                    lst.append(int(float(r)))
+
+        if checkPred(row, i) == False:
+            test = sameID(row, test)
+        else:
+            row = PFonly(row, field)
+            for r in row:
+                label.append(r)
+
+        if len(test) == 16:
+            P = []
+            P = PFchange(test, field)
+            for p1 in P:
+                for p2 in p1:
+                    pf.append(p2)
+            outrow = lst + pf + label
+            pf = []
+            outrow.insert(0, outrow[1])
+            del outrow[2]
+            outrow[1] = outrow[1] - outrow[6]
+            del outrow[6]
+            out.writerow(outrow)
+            label = []
+            test = []
+            lst = []
 FeaturizeData("complete.csv")

@@ -9,7 +9,9 @@ def ProcessData(Input):
         fn = ["FetchDate", "CusID", "EmployeeIdx", "CntyOfResidence", "Sex",    #Fieldnames
                  "Age", "1stContract", "NewCusIdx", "Seniority", "CusType",
                  "RelationType", "ForeignIdx", "ChanEnter", "DeceasedIdx", "ProvCode",
-                 "ActivIdx", "Income", "Segment", "SavingAcnt", "Guarantees",
+                 "ActivIdx", "Income", "Segment",
+
+              "SavingAcnt", "Guarantees",
                  "CurrentAcnt", "DerivativesAcnt", "PayrollAcnt", "JuniorAcnt", "MoreParticularAcnt",
                  "ParticularAcnt", "ParticularPlusAcnt", "ShortDeposit", "MediumDeposit", "LongDeposit",
                  "eAcnt", "Funds", "Mortgage", "Pensions", "Loans",
