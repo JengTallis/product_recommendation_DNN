@@ -32,7 +32,6 @@ def clean_dt(data):
 
         next(reader, None)  # read skip header row, ignore return headers
         writer.writerow(fields) # write header row
-        writer2.writerow(fields) # write header row
 
         for row in reader:
 

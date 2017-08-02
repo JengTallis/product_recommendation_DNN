@@ -76,22 +76,6 @@ def make_missing_months(data):
 						c_info[0] = months[m]
 						writer.writerow(c_info)
 			cust.append(row)
-'''
-				while len(cust) > 0:
-					r = cust.pop(0)
-					c_info = r[0:18]
-					while m < len(months):
-						if [0] != months[m]:
-							c_info[0] = months[m]
-							writer.writerow(c_info)
-						m += 1
-				while m < len(months):
-					writer.writerow(c_info)
-					m += 1
-			cust.append(row)
-'''
-
-
 
 #dt_senior("sort.csv")
 make_missing_months("incomplete.csv")
