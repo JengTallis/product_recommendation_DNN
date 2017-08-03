@@ -19,7 +19,7 @@ read csv file
 print to command line output
 '''
 def combine(data, data2):
-	with open(data, 'r', newline='') as rf, open(data2, 'r', newline='') as rf2, open("knn_train.csv", 'w', newline='') as wf:
+	with open(data, 'r', newline='') as rf, open(data2, 'r', newline='') as rf2, open("knn_impute_complete.csv", 'w', newline='') as wf:
 		record_cnt = 0
 		field_cnt = 0
 

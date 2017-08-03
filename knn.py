@@ -9,6 +9,7 @@ KNN imputation on the dataset
 import numpy as np
 from sklearn import preprocessing, neighbors, model_selection
 import pandas as pd
+import tensorflow as tf
 
 def knn(data):
 	rf = pd.read_csv(data)
@@ -73,16 +74,27 @@ def predict(classifier, data):
 	rf = pd.read_csv(data)
 	print("%s file read." %data)
 
-	copy = rf.copy(deep=True)	# copy the customer info
+	copy = rf.copy(deep=True)									# copy the customer info
 	copy.drop(fields,inplace=True, axis=1)
+	print("Copy made.")
 
-	rf.drop(['FetchDate','CusID'], axis=1, inplace=True)	# predict
+	rf.drop(['FetchDate','CusID'], axis=1, inplace=True)
 	X = rf.values[:,0:16]
-	X_n = preprocessing.normalize(X, norm='l2', axis=1, copy=True)
-	o = classifier.predict(X)
-	print("Prediction made.")
+	X_n = preprocessing.normalize(X, norm='l2', axis=1, copy=True)	# normalize features
+	print("Finish normalization.")
 
-	od = pd.DataFrame(data=o,columns=fields)
+	os = []
+	# for row in X_n.itertuples():
+	for row in X_n:
+		a = []
+		a.append(row)
+		o = classifier.predict(a)
+		os.append(o[0])
+	
+	# os = classifier.predict(X)
+										# predict
+	print("Prediction made.")
+	od = pd.DataFrame(data=os,columns=fields)
 
 	result = pd.concat([copy, od], axis=1)		# concatenate the prediction after the customer info
 	result.to_csv('imputed.csv', index=False)	# write to csv file

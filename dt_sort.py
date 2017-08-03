@@ -9,6 +9,8 @@ Sort the data by cusID and then FetchDate
 import operator
 import csv
 
+import pandas as pd
+
 def  sort_dt(data):
 	with open(data, 'r', newline='') as rf, open("sort.csv", 'w', newline='') as wf:
 
@@ -33,6 +35,6 @@ def  sort_dt(data):
 def  sort (data):
 	df = pd.read_csv(data)
 	df = df.sort_values(['CusID','FetchDate'], ascending = [True, False])
-	df.to_csv('sort.csv',index=False, sep = ',', encoding = 'utf-8')
+	df.to_csv('sorted_all.csv',index=False, sep = ',', encoding = 'utf-8')
 
 sort("num.csv")
