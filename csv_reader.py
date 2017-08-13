@@ -15,7 +15,17 @@ import sys
 import csv
 
 '''
-read csv file
+read csv file Field # 0 	 16858
+	 Field # 1 	 15889
+Record # 15
+	 Field # 0 	 16887
+	 Field # 1 	 15889
+Record # 16
+	 Field # 0 	 16918
+	 Field # 1 	 15889
+Record # 17
+	 Field # 0 	 16948
+	 Field # 1 	 15889
 print to command line output
 '''
 def read_dt(data):
@@ -29,19 +39,18 @@ def read_dt(data):
 		#writer.writerow(fields)
 
 		for row in reader:
-			if record_cnt < 11: 
+			if record_cnt < 2: 
 				print("Record # %d" %record_cnt)
 				#writer.writerow(row)
 				#print("Record # %d" %record_cnt)
 			field_cnt = 0
 			for field in row:
-				if record_cnt < 11: print("\t Field # %d \t %s" %(field_cnt,field))
+				if record_cnt < 2 and field_cnt < 50: print("\t Field # %d \t %s" %(field_cnt,field))
 					#print("\t Field # %d \t %s" %(field_cnt,field))
 				field_cnt += 1
 			record_cnt += 1
 		print("# of Record %d" %record_cnt)
 		print("# of Field %d" %field_cnt)
-
 
 # read file from command line argument
 # argv[0] is this file name (csv_reader.py)
