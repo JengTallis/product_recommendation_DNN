@@ -48,8 +48,8 @@ def custMonthly(file):
 
 def  sortData (filein):
     df = pd.read_csv(filein)
-    df = df.sort_values(['CusID','FetchDate'], ascending = [True, False])
-    df.to_csv('sorted.csv',index=False, sep = ',', encoding = 'utf-8')
+    df = df.sort_values(['CusID','FetchDate'], ascending = [True, True])
+    df.to_csv('complete1.csv',index=False, sep = ',', encoding = 'utf-8')
 
 def completeData(file):
     with open(file, 'r') as r, open("complete.csv", 'w', newline='') as wr1, open("incomplete.csv", 'w', newline='') as wr2:
@@ -119,14 +119,8 @@ def incompleteData (file):
 
 
 
-#sortData("transformed.csv")
+sortData("complete.csv")
 #completeData('sorted.csv')
 #incompleteData('incomplete.csv')
 
-custMonthly('transformed.csv')
-custMonthly('sorted.csv')
-custMonthly('complete.csv')
-custMonthly('incomplete.csv')
-custMonthly('consecutive.csv')
-custMonthly('inconsecutive.csv')
 
