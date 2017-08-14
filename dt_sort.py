@@ -12,7 +12,7 @@ import csv
 import pandas as pd
 
 def  sort_dt(data):
-	with open(data, 'r', newline='') as rf, open("sort.csv", 'w', newline='') as wf:
+	with open(data, 'r', newline='') as rf, open("asort.csv", 'w', newline='') as wf:
 
 		reader = csv.reader(rf, delimiter=",", quotechar='|') # csv_reader
 		writer = csv.writer(wf, delimiter=",", quotechar='|') # csv_writer
@@ -27,14 +27,14 @@ def  sort_dt(data):
 		'''
 
 		sort = sorted(reader, key= lambda row: int(row[1])) # stable sort as number
-		#sort = sorted(sort, key= lambda row: int(row[0])) 
+		#sort = sorted(sort, key= lambda row: int(row[0])) # unstable sort
 
 		for row in sort:
 			writer.writerow(row)
 
 def  sort (data):
 	df = pd.read_csv(data)
-	df = df.sort_values(['CusID','FetchDate'], ascending = [True, False])
-	df.to_csv('sorted_all.csv',index=False, sep = ',', encoding = 'utf-8')
+	df = df.sort_values(['CusID','FetchDate'], ascending = [True, True])
+	df.to_csv('asort.csv',index=False, sep = ',', encoding = 'utf-8')
 
-sort("num.csv")
+sort("knn_all.csv")

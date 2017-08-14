@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 import pandas as pd
 from keras.models import Sequential
-from keras.layers import LSTM, Dense
+from keras.layers import LSTM, Dense, Bidirectional, TimeDistributed
 from sklearn import preprocessing
 
 
@@ -35,6 +35,9 @@ def train_validate_test_split(df, train_percent=.6, val_percent=.2, seed=None):
     #return train, validate, test
     return train.as_matrix(), validate.as_matrix(), test.as_matrix()	# return numpy arrays
 
+'''
+Format the Data
+'''
 def rnn_data(file):
 
 	rf = pd.read_csv(file)
@@ -88,6 +91,9 @@ def rnn_data(file):
 
 	return x_train, y_train, x_valid, y_valid, x_test, y_test
 
+'''
+RNN LSTM
+'''
 def lstm_rnn(x_train, y_train, x_val, y_val, x_test, y_test):
 
 	# ===================== Data ======================
@@ -108,7 +114,7 @@ def lstm_rnn(x_train, y_train, x_val, y_val, x_test, y_test):
 	y_val = np.random.random((100, timesteps, label_dim))
 	'''
 
-	# ===================== LSTM Model ====================
+	# ===================== LSTM RNN Model ====================
 
 	batch_size = 64
 	epochs = 5
@@ -143,8 +149,52 @@ def lstm_rnn(x_train, y_train, x_val, y_val, x_test, y_test):
 	scores = model.evaluate(x_test, y_test, batch_size = batch_size)
 	print("\n%s: %.5f%%" % (model.metrics_names[1], scores[1]*100))
 
+'''
+Bidirectional RNN LSTM
+'''
+def lstm_brnn(x_train, y_train, x_val, y_val, x_test, y_test):
 
-x_train, y_train, x_valid, y_valid, x_test, y_test = rnn_data('senior.csv')
-lstm_rnn(x_train, y_train, x_valid, y_valid, x_test, y_test)
+	# ===================== Data ======================
+	np.random.seed(18657865)
+	print("Getting Data")
+
+	# ===================== LSTM BRNN Model ====================
+
+	batch_size = 64
+	epochs = 5
+
+	data_dim = 16	# 16 cust info
+	timesteps = 12	# 12 months
+	label_dim = 24	# 24 products
+
+	print("Building BRNN LSTM Model")
+	# expected input data shape: (batch_size, timesteps, data_dim)
+	model = Sequential()
+	model.add(Bidirectional(LSTM(32, return_sequences=True), input_shape=(timesteps, data_dim)))  # returns a sequence of vectors of dimension 32
+	model.add(TimeDistributed(Dense(label_dim, activation='sigmoid')))
+	#model.add(LSTM(label_dim, return_sequences=True, activation='softmax'))	# returns a softmax sequence of vectors of dimension label_dim 
+
+	model.compile(loss='categorical_crossentropy',
+	              optimizer='adam',
+	              metrics=['accuracy'])
+
+	print("Start training")
+	model.fit(x_train, y_train,
+	          batch_size=batch_size, epochs=epochs,
+	          validation_data=(x_val, y_val))
+	print("Finish training")
+
+
+	# ===================== Evaluation ====================
+
+	print("Evaluattion Result:")
+	# evaluate the model
+	scores = model.evaluate(x_test, y_test, batch_size = batch_size)
+	print("\n%s: %.5f%%" % (model.metrics_names[1], scores[1]*100))
+
+
+x_train, y_train, x_valid, y_valid, x_test, y_test = rnn_data('senior.csv')	# Segment Data into Train, Validation, Test
+#lstm_rnn(x_train, y_train, x_valid, y_valid, x_test, y_test)	# RNN LSTM
+lstm_brnn(x_train, y_train, x_valid, y_valid, x_test, y_test)	# BRNN LSTM
 
 
