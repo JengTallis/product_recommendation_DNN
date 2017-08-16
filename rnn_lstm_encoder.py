@@ -6,6 +6,7 @@ import pandas as pd
 from keras.models import Sequential
 from keras.layers import LSTM, Dense, Bidirectional, TimeDistributed
 from sklearn import preprocessing
+from sklearn.metrics import f1_score
 
 
 def generate_chunk(reader, chunksize):
@@ -16,7 +17,6 @@ def generate_chunk(reader, chunksize):
 			del chunk[:]
 		chunk.append(line)
 	yield chunk
-
 
 '''
 Take pandas dataframe, 
@@ -43,8 +43,6 @@ def rnn_data(file):
 	rf = pd.read_csv(file)
 	print("%s file read." %file)
 	rf.drop(['FetchDate','CusID'], axis=1, inplace=True)
-
-	cust_infos = rf.values[:,0:16]
 
 	n_products = 24
 	n_months = 17
@@ -141,7 +139,6 @@ def lstm_rnn(x_train, y_train, x_val, y_val, x_test, y_test):
 	          validation_data=(x_val, y_val))
 	print("Finish training")
 
-
 	# ===================== Evaluation ====================
 
 	print("Evaluattion Result:")
@@ -184,7 +181,6 @@ def lstm_brnn(x_train, y_train, x_val, y_val, x_test, y_test):
 	          validation_data=(x_val, y_val))
 	print("Finish training")
 
-
 	# ===================== Evaluation ====================
 
 	print("Evaluattion Result:")
@@ -192,6 +188,21 @@ def lstm_brnn(x_train, y_train, x_val, y_val, x_test, y_test):
 	scores = model.evaluate(x_test, y_test, batch_size = batch_size)
 	print("\n%s: %.5f%%" % (model.metrics_names[1], scores[1]*100))
 
+	#F1 score (Harmonic mean of precision and recall)
+	y_pred = model.predict(x_test, batch_size = batch_size)
+
+	preds = []
+	truth = []
+	for i in range(label_dim):
+		preds.append(y_pred[i,:])
+		truth.append(y_test[i,:])
+	print("prediction shape:")
+	print(np.shape(preds))
+	print(np.shape(y_test))
+
+	for i in range(label_dim):
+		f1 = f1_score(truth[i], preds[i])
+		print ("F1 score for the %d product: %.5f%%" %(i, f1))
 
 x_train, y_train, x_valid, y_valid, x_test, y_test = rnn_data('senior.csv')	# Segment Data into Train, Validation, Test
 #lstm_rnn(x_train, y_train, x_valid, y_valid, x_test, y_test)	# RNN LSTM
