@@ -72,9 +72,9 @@ def rnn_data(file):
 		data_arr.append(flat)
 
 	data = np.array(data_arr)
-	print(data.shape)	# (n_cust, 1, n_months*n_fields)
+	#print(data.shape)	# (n_cust, 1, n_months*n_fields)
 	data = np.reshape(data,(-1, n_months*n_fields))
-	print(data.shape)	# (n_cust, n_months*n_fields)
+	#print(data.shape)	# (n_cust, n_months*n_fields)
 
 	# normalize data
 	scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
@@ -82,7 +82,7 @@ def rnn_data(file):
 	print("Data normalized")
 
 	df = pd.DataFrame(data=data)
-	print(df.shape)		# (n_cust, n_months*n_fields)
+	#print(df.shape)		# (n_cust, n_months*n_fields)
 
 	print("Splitting into train, validation, test")
 	train, validate, test = train_validate_test_split(df)
@@ -118,17 +118,16 @@ def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
 	batch_size = 64
 	epochs = 5
 
-	data_dim = 16	# 16 cust info
-	timesteps = 17	# 17 months
+	data_dim = 40	# n_fields = 40
+	timesteps = 16	# 16 months
 	label_dim = 24	# 24 products
 
 	print("Building RNN LSTM Model")
 	# expected input data shape: (batch_size, timesteps, data_dim)
 	model = Sequential()
 	model.add(LSTM(32, return_sequences=True, input_shape=(timesteps, data_dim)))  # returns a sequence of vectors of dimension 32
-	model.add(LSTM(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
-	model.add(LSTM(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
-	model.add(LSTM(label_dim, return_sequences=True, activation='softmax'))	# returns a softmax sequence of vectors of dimension label_dim 
+	model.add(LSTM(32, return_sequences=False))  # returns a sequence of vectors of dimension 32
+	model.add(Dense(label_dim, activation='softmax'))
 
 	model.compile(loss='categorical_crossentropy',
 	              optimizer='rmsprop',
@@ -140,7 +139,6 @@ def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
 	          validation_data=(x_val, y_val))
 	print("Finish training")
 
-
 	# ===================== Evaluation ====================
 
 	print("Evaluattion Result:")
@@ -149,8 +147,7 @@ def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
 	print("\n%s: %.5f%%" % (model.metrics_names[1], scores[1]*100))
 
 
-
 x_train, y_train, x_val, y_val, x_test, y_test = rnn_data('senior.csv')	# Segment Data into Train, Validation, Test
-#lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
+lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
 
 
