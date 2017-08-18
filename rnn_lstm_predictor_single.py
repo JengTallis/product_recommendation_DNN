@@ -1,19 +1,20 @@
-# rnn_lstm_predictor.py
+# rnn_lstm_predictor_single.py
 
 import numpy as np
 import tensorflow as tf
 import pandas as pd
-from keras import initializers, optimizers, metrics
+from keras import initializers, optimizers
 from keras.models import Sequential
 from keras.layers import LSTM, Dense, Bidirectional, TimeDistributed, Activation
 from sklearn import preprocessing
 from sklearn.metrics import f1_score, roc_auc_score, cohen_kappa_score
-
+from keras.utils.np_utils import to_categorical
+from imblearn.over_sampling import SMOTE, ADASYN
 
 def to_binary(xs):
 	ys = []
 	for x in xs:
-		y = 1 if x >= 0.5 else 0
+		y = 1 if x[1] >= 0.5 else 0
 		ys.append(y)
 	return ys
 
@@ -44,21 +45,6 @@ def train_validate_test_split(df, train_percent=.6, val_percent=.2, seed=None):
     return train.as_matrix(), validate.as_matrix(), test.as_matrix()	# return numpy arrays
 
 '''
-convert an array of values into a dataset matrix
-@param look_back = the number of time steps to look backwards
-@return numpy arrays X and Y
-'''
-'''
-def create_dataset(dataset, look_back=12):
-	X, Y = [], []
-	for i in range(len(dataset)-look_back-1):
-		a = dataset[i:(i+look_back), 0:40]
-		X.append(a)
-		Y.append(dataset[i + look_back, 16:40])
-	return numpy.array(X), numpy.array(Y)
-'''
-
-'''
 Format the Data
 '''
 def rnn_data(file):
@@ -74,6 +60,35 @@ def rnn_data(file):
 	timesteps = 16
 	start_idx = 0
 
+	# product
+	credit_card = 18
+	loans = 16
+	guarantees = 1
+	particularAcnt = 7
+	p = particularAcnt
+	product = rf['Guarantees'].as_matrix()
+	product = rf['ParticularAcnt'].as_matrix()
+	
+	# Calculate Class Weight
+
+	bc = [0,0]
+	n_samples = 0
+	n_classes = 2
+	for prd in product:
+		n_samples += 1
+		bc[int(prd)] += 1
+	print("product class counted.")
+
+	print(bc)
+	weight = [0,0]
+	for i in range(n_classes):
+		weight[i] = n_samples / (n_classes * bc[i])
+
+	class_weight = {0 : weight[0], 1: weight[1]}
+
+	print(class_weight)
+
+	# generate chunck
 	data_arr = []
 
 	for chunk in generate_chunk(rf.values, n_months):	# one customer
@@ -93,6 +108,7 @@ def rnn_data(file):
 	df = pd.DataFrame(data=data)
 	#print(df.shape)		# (n_cust, n_months*n_fields)
 
+
 	print("Splitting into train, validation, test")
 	train, validate, test = train_validate_test_split(df)
 
@@ -101,22 +117,26 @@ def rnn_data(file):
 	test = np.reshape(test,(-1, n_months, n_fields))
 
 	x_train = train[:, 0:timesteps, start_idx:n_fields]		# the history months    (n_cust, timesteps, n_fields)
-	y_train = train[:, timesteps, n_cust_infos:n_fields]	# the month to predict  (n_cust, n_products)
+	y_train = train[:, timesteps, n_cust_infos+p]	# the month to predict  (n_cust, n_products)
 
 	x_valid = valid[:, 0:timesteps, start_idx:n_fields]
-	y_valid = valid[:, timesteps, n_cust_infos:n_fields]
+	y_valid = valid[:, timesteps, n_cust_infos+p]
 
 	x_test = test[:, 0:timesteps, start_idx:n_fields]
-	y_test = test[:, timesteps, n_cust_infos:n_fields]
+	y_test = test[:, timesteps, n_cust_infos+p]
+
+	y_train = to_categorical(y_train)
+	y_valid = to_categorical(y_valid)
+	y_test = to_categorical(y_test)
 
 	print("Data formatted.")
 
-	return x_train, y_train, x_valid, y_valid, x_test, y_test
+	return x_train, y_train, x_valid, y_valid, x_test, y_test, class_weight
 
 '''
 RNN LSTM
 '''
-def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
+def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_weight):
 
 	# ===================== Data ======================
 	np.random.seed(18657865)
@@ -129,9 +149,9 @@ def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
 
 	data_dim = 40	# n_fields = 40
 	timesteps = 16	# 16 months
-	label_dim = 24	# 24 products
+	label_dim = 2	# 1 product, 2 classes
 
-	print("Building RNN LSTM Predictor Model")
+	print("Building RNN LSTM Predictor Single Model")
 	# expected input data shape: (batch_size, timesteps, data_dim)
 	model = Sequential()
 	model.add(LSTM(32, return_sequences=True, input_shape=(timesteps, data_dim)))  # returns a sequence of vectors of dimension 32
@@ -144,17 +164,17 @@ def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
 
 	print("Start training")
 	model.fit(x_train, y_train,
-	          batch_size=batch_size, epochs=epochs,
+	          batch_size=batch_size, epochs=epochs, class_weight = class_weight,
 	          validation_data=(x_val, y_val))
 	print("Finish training")
 
 	# ===================== Evaluation ====================
-	evaluate_model(model, x_test , y_test, batch_size, label_dim)
+	evaluate_model(model, x_test , y_test, batch_size)
 
 '''
 BRNN LSTM
 '''
-def lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
+def lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_weight):
 
 	# ===================== Data ======================
 	np.random.seed(18657865)
@@ -167,7 +187,7 @@ def lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
 
 	data_dim = 40	# n_fields = 40
 	timesteps = 16	# 16 months
-	label_dim = 24	# 24 products
+	label_dim = 2	# 1 product, 2 classes
 
 	print("Building BRNN LSTM Predictor Model")
 	# expected input data shape: (batch_size, timesteps, data_dim)
@@ -188,18 +208,18 @@ def lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
 
 	print("Start training")
 	model.fit(x_train, y_train,
-	          batch_size=batch_size, epochs=epochs,
+	          batch_size=batch_size, epochs=epochs, class_weight = class_weight,
 	          validation_data=(x_val, y_val))
 	print("Finish training")
 
 	# ===================== Evaluation ====================
-	evaluate_model(model, x_test , y_test, batch_size, label_dim)
+	evaluate_model(model, x_test , y_test, batch_size)
 
 '''
 Model Evaluation
 Accuracy, F1_score and ROC
 '''
-def evaluate_model(model, x_test , y_test, batch_size, label_dim):
+def evaluate_model(model, x_test , y_test, batch_size):
 
 	print("Evaluation Result:")
 
@@ -208,16 +228,19 @@ def evaluate_model(model, x_test , y_test, batch_size, label_dim):
 
 	# F1 score (Harmonic mean of precision and recall)
 	# ROC
-	y_pred = model.predict(x_test, batch_size = batch_size)
+	y_p = model.predict(x_test, batch_size = batch_size)
+	print(y_p.shape)
+	print(y_p)
+	y_pred = to_binary(y_p)
+	y_tb = to_binary(y_test)
 
-	for i in range(label_dim):
-		y_pred_b = to_binary(y_pred[i])
-		f1 = f1_score(y_test[i], y_pred_b)
-		roc = roc_auc_score(y_test[i], y_pred_b)
-		kappa = cohen_kappa_score(y_test[i], y_pred_b)
-		print ("Product %d : F1_score = %.5f%%  ROC_AUC = %.5f%%  Cohen_Kappa = %.5f%%" %(i, f1, roc, kappa))
+	f1 = f1_score(y_tb, y_pred)
+	roc = roc_auc_score(y_tb, y_pred)
+	kappa = cohen_kappa_score(y_tb, y_pred)
+	print ("F1_score = %.5f%%  ROC_AUC = %.5f%%  Cohen_Kappa = %.5f%%" %(f1, roc, kappa))
 
-x_train, y_train, x_val, y_val, x_test, y_test = rnn_data('senior.csv')	# Segment Data into Train, Validation, Test
-#lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
-lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
+
+x_train, y_train, x_val, y_val, x_test, y_test, class_weight = rnn_data('senior.csv')	# Segment Data into Train, Validation, Test
+#lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_weight)
+lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_weight)
 

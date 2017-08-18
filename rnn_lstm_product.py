@@ -1,21 +1,12 @@
-# rnn_lstm_predictor.py
+# rnn_lstm_allmonths.py
 
 import numpy as np
 import tensorflow as tf
 import pandas as pd
-from keras import initializers, optimizers, metrics
 from keras.models import Sequential
-from keras.layers import LSTM, Dense, Bidirectional, TimeDistributed, Activation
+from keras.layers import LSTM, Dense, Bidirectional, TimeDistributed
 from sklearn import preprocessing
-from sklearn.metrics import f1_score, roc_auc_score, cohen_kappa_score
 
-
-def to_binary(xs):
-	ys = []
-	for x in xs:
-		y = 1 if x >= 0.5 else 0
-		ys.append(y)
-	return ys
 
 def generate_chunk(reader, chunksize):
 	chunk = []
@@ -42,21 +33,6 @@ def train_validate_test_split(df, train_percent=.6, val_percent=.2, seed=None):
     test = df.ix[perm[val_end:]]
     #return train, validate, test
     return train.as_matrix(), validate.as_matrix(), test.as_matrix()	# return numpy arrays
-
-'''
-convert an array of values into a dataset matrix
-@param look_back = the number of time steps to look backwards
-@return numpy arrays X and Y
-'''
-'''
-def create_dataset(dataset, look_back=12):
-	X, Y = [], []
-	for i in range(len(dataset)-look_back-1):
-		a = dataset[i:(i+look_back), 0:40]
-		X.append(a)
-		Y.append(dataset[i + look_back, 16:40])
-	return numpy.array(X), numpy.array(Y)
-'''
 
 '''
 Format the Data
@@ -100,13 +76,13 @@ def rnn_data(file):
 	valid = np.reshape(validate,(-1, n_months, n_fields))
 	test = np.reshape(test,(-1, n_months, n_fields))
 
-	x_train = train[:, 0:timesteps, start_idx:n_fields]		# the history months    (n_cust, timesteps, n_fields)
+	x_train = train[:, 0:timesteps, n_cust_infos:n_fields]		# the history months    (n_cust, timesteps, n_fields)
 	y_train = train[:, timesteps, n_cust_infos:n_fields]	# the month to predict  (n_cust, n_products)
 
-	x_valid = valid[:, 0:timesteps, start_idx:n_fields]
+	x_valid = valid[:, 0:timesteps, n_cust_infos:n_fields]
 	y_valid = valid[:, timesteps, n_cust_infos:n_fields]
 
-	x_test = test[:, 0:timesteps, start_idx:n_fields]
+	x_test = test[:, 0:timesteps, n_cust_infos:n_fields]
 	y_test = test[:, timesteps, n_cust_infos:n_fields]
 
 	print("Data formatted.")
@@ -127,62 +103,18 @@ def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
 	batch_size = 64
 	epochs = 5
 
-	data_dim = 40	# n_fields = 40
+	data_dim = 24	# n_fields = 40
 	timesteps = 16	# 16 months
 	label_dim = 24	# 24 products
 
-	print("Building RNN LSTM Predictor Model")
+	print("Building RNN LSTM Model")
 	# expected input data shape: (batch_size, timesteps, data_dim)
 	model = Sequential()
 	model.add(LSTM(32, return_sequences=True, input_shape=(timesteps, data_dim)))  # returns a sequence of vectors of dimension 32
-	model.add(LSTM(32, return_sequences=False))  # returns only from the last time step
+	model.add(LSTM(32, return_sequences=False))  # returns a sequence of vectors of dimension 32
 	model.add(Dense(label_dim, activation='softmax'))
 
 	model.compile(loss='mean_squared_error',
-	              optimizer='rmsprop',
-	              metrics=['accuracy'])
-
-	print("Start training")
-	model.fit(x_train, y_train,
-	          batch_size=batch_size, epochs=epochs,
-	          validation_data=(x_val, y_val))
-	print("Finish training")
-
-	# ===================== Evaluation ====================
-	evaluate_model(model, x_test , y_test, batch_size, label_dim)
-
-'''
-BRNN LSTM
-'''
-def lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
-
-	# ===================== Data ======================
-	np.random.seed(18657865)
-	print("Getting Data")
-
-	# ===================== LSTM RNN Model ====================
-
-	batch_size = 64
-	epochs = 5
-
-	data_dim = 40	# n_fields = 40
-	timesteps = 16	# 16 months
-	label_dim = 24	# 24 products
-
-	print("Building BRNN LSTM Predictor Model")
-	# expected input data shape: (batch_size, timesteps, data_dim)
-	model = Sequential()
-	model.add(Bidirectional(LSTM(32, return_sequences=True, kernel_initializer='random_normal'), input_shape=(timesteps, data_dim)))	# returns a sequence of vectors of dimension 32
-	model.add(LSTM(32, activation='relu', return_sequences=False))  # returns only from the last time step
-	model.add(Dense(label_dim, activation='softmax'))
-
-	'''
-	model.compile(loss='mean_squared_error',
-	              optimizer='adam',
-	              metrics=['accuracy'])
-	'''
-
-	model.compile(loss='categorical_crossentropy',
 	              optimizer='adam',
 	              metrics=['accuracy'])
 
@@ -193,31 +125,14 @@ def lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test):
 	print("Finish training")
 
 	# ===================== Evaluation ====================
-	evaluate_model(model, x_test , y_test, batch_size, label_dim)
 
-'''
-Model Evaluation
-Accuracy, F1_score and ROC
-'''
-def evaluate_model(model, x_test , y_test, batch_size, label_dim):
-
-	print("Evaluation Result:")
-
+	print("Evaluattion Result:")
+	# evaluate the model
 	scores = model.evaluate(x_test, y_test, batch_size = batch_size)
 	print("\n%s: %.5f%%" % (model.metrics_names[1], scores[1]*100))
 
-	# F1 score (Harmonic mean of precision and recall)
-	# ROC
-	y_pred = model.predict(x_test, batch_size = batch_size)
-
-	for i in range(label_dim):
-		y_pred_b = to_binary(y_pred[i])
-		f1 = f1_score(y_test[i], y_pred_b)
-		roc = roc_auc_score(y_test[i], y_pred_b)
-		kappa = cohen_kappa_score(y_test[i], y_pred_b)
-		print ("Product %d : F1_score = %.5f%%  ROC_AUC = %.5f%%  Cohen_Kappa = %.5f%%" %(i, f1, roc, kappa))
 
 x_train, y_train, x_val, y_val, x_test, y_test = rnn_data('senior.csv')	# Segment Data into Train, Validation, Test
-#lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
-lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
+lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
+
 
