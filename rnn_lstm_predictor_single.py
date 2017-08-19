@@ -10,6 +10,7 @@ from sklearn import preprocessing
 from sklearn.metrics import f1_score, roc_auc_score, cohen_kappa_score
 from keras.utils.np_utils import to_categorical
 from imblearn.over_sampling import SMOTE, ADASYN
+# from collections import Counter     # ndarray not hashable
 
 def to_binary(xs):
 	ys = []
@@ -17,6 +18,16 @@ def to_binary(xs):
 		y = 1 if x[1] >= 0.5 else 0
 		ys.append(y)
 	return ys
+
+def binary_counter(arr):
+	bc = [0,0]
+	n_samples = 0
+	n_classes = 2
+	for a in arr:
+		n_samples += 1
+		bc[int(a)] += 1
+	counter = {0 : bc[0], 1: bc[1]}
+	return counter
 
 def generate_chunk(reader, chunksize):
 	chunk = []
@@ -65,10 +76,15 @@ def rnn_data(file):
 	loans = 16
 	guarantees = 1
 	particularAcnt = 7
-	p = particularAcnt
+	funds = 13
+	homeAcnt = 20
+	juniorAcnt = 5
+	p = juniorAcnt
 	product = rf['Guarantees'].as_matrix()
 	product = rf['ParticularAcnt'].as_matrix()
-	
+	product = rf['Funds'].as_matrix()
+	product = rf['HomeAcnt'].as_matrix()
+	product = rf['JuniorAcnt'].as_matrix()
 	# Calculate Class Weight
 
 	bc = [0,0]
@@ -117,10 +133,33 @@ def rnn_data(file):
 	test = np.reshape(test,(-1, n_months, n_fields))
 
 	x_train = train[:, 0:timesteps, start_idx:n_fields]		# the history months    (n_cust, timesteps, n_fields)
-	y_train = train[:, timesteps, n_cust_infos+p]	# the month to predict  (n_cust, n_products)
+	y_train = train[:, timesteps, n_cust_infos+p]			# the month to predict  (n_cust, n_products)
+
+	# Resampling
+
+	x_train = np.reshape(x_train, (-1, timesteps*n_fields))
+	y_train = np.reshape(y_train,(-1,1))
+
+	print(x_train.shape)
+	print(y_train.shape)
+	y_train=np.ravel(y_train)
+	print(y_train.shape)
+
+	print("Original dataset: ", binary_counter(y_train))
+	#sm = SMOTE(random_state = 1024)
+	ada = ADASYN(random_state = 1024)
+	#x_train, y_train = sm.fit_sample(x_train, y_train)
+	x_train, y_train = ada.fit_sample(x_train, y_train)	# resampling
+	#print("SMOTE Resampled dataset: ", binary_counter(y_train))	# count of +ve and -ve labels
+	print("ADASYN Resampled dataset: ", binary_counter(y_train))
+
+	x_train = np.reshape(x_train, (-1, n_months-1, n_fields))
+	y_train = np.reshape(y_train,(-1,1))
+	print(y_train.shape)
 
 	x_valid = valid[:, 0:timesteps, start_idx:n_fields]
 	y_valid = valid[:, timesteps, n_cust_infos+p]
+	print(y_valid.shape)
 
 	x_test = test[:, 0:timesteps, start_idx:n_fields]
 	y_test = test[:, timesteps, n_cust_infos+p]
