@@ -1,5 +1,24 @@
 # rnn_lstm_predictor_single.py
 
+'''
+
+An LSTM RNN (URNN and BRNN) predictor for a single product
+
+Input: monthly sequence of [customer info + product ownership]
+Output: probability of a product being owned and not own for the coming month
+
+Combatting Class Imbalalnce with
+
+1. Cost Function Based Approach : 
+	weight[i] = n_samples / (n_classes * bc[i])
+	Asymmetric Cost function, cost-sensitive training, penalized model
+
+2. Sampling Based Approach (Resampling) : 
+	1) Oversampling: RandomOverSampler, SMOTE, ADASYN
+	2) Hybrid(Oversampling + Undersampling): SMOTEEN, SMOTETomek 
+
+'''
+
 import numpy as np
 import tensorflow as tf
 import pandas as pd
@@ -7,11 +26,17 @@ from keras import initializers, optimizers
 from keras.models import Sequential
 from keras.layers import LSTM, Dense, Bidirectional, TimeDistributed, Activation
 from sklearn import preprocessing
-from sklearn.metrics import f1_score, roc_auc_score, cohen_kappa_score
+from sklearn.metrics import f1_score, roc_auc_score, cohen_kappa_score	# Skewed Dataset Metrics
 from keras.utils.np_utils import to_categorical
-from imblearn.over_sampling import SMOTE, ADASYN
-# from collections import Counter     # ndarray not hashable
+from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN	# Oversampling
+from imblearn.combine import SMOTEENN, SMOTETomek	# Hybrid resampling
+# from collections import Counter     				# ndarray not hashable, cannot be used
 
+
+'''
+Convert a probability array to a binary array
+Using threshold = 0.5
+'''
 def to_binary(xs):
 	ys = []
 	for x in xs:
@@ -19,6 +44,10 @@ def to_binary(xs):
 		ys.append(y)
 	return ys
 
+'''
+Count occurrences of binary class
+@return counter = {class: count}
+'''
 def binary_counter(arr):
 	bc = [0,0]
 	n_samples = 0
@@ -29,6 +58,10 @@ def binary_counter(arr):
 	counter = {0 : bc[0], 1: bc[1]}
 	return counter
 
+'''
+Chunk generator
+@param chunksize = the size of chunk to generate
+'''
 def generate_chunk(reader, chunksize):
 	chunk = []
 	for index, line in enumerate(reader):
@@ -57,9 +90,12 @@ def train_validate_test_split(df, train_percent=.6, val_percent=.2, seed=None):
 
 '''
 Format the Data
+Preprocess the Data
+Handle Class Imbalance
 '''
 def rnn_data(file):
 
+	# ======================= Data Information ========================
 	rf = pd.read_csv(file)
 	print("%s file read." %file)
 	rf.drop(['FetchDate','CusID'], axis=1, inplace=True)
@@ -71,40 +107,39 @@ def rnn_data(file):
 	timesteps = 16
 	start_idx = 0
 
-	# product
-	credit_card = 18
-	loans = 16
-	guarantees = 1
-	particularAcnt = 7
-	funds = 13
-	homeAcnt = 20
-	juniorAcnt = 5
-	p = juniorAcnt
-	product = rf['Guarantees'].as_matrix()
-	product = rf['ParticularAcnt'].as_matrix()
-	product = rf['Funds'].as_matrix()
-	product = rf['HomeAcnt'].as_matrix()
-	product = rf['JuniorAcnt'].as_matrix()
-	# Calculate Class Weight
+	# ======================= Product List =========================
+	products = ["SavingAcnt", "Guarantees",
+                "CurrentAcnt", "DerivativeAcnt", "PayrollAcnt", "JuniorAcnt", "MoreParticularAcnt",
+                "ParticularAcnt", "ParticularPlusAcnt", "ShortDeposit", "MediumDeposit", "LongDeposit",
+                "eAcnt", "Funds", "Mortgage", "Pensions", "Loans",
+                "Taxes", "CreditCard", "Securities", "HomeAcnt", "Payroll",
+                "PayrollPensions", "DirectDebit"]
 
-	bc = [0,0]
+	target_product = "HomeAcnt"		# Set target product
+
+	p = products.index(target_product)
+	print("Target Product : %s" %target_product)
+	product = rf[target_product].as_matrix()
+
+	# ================== Calculate Class Weight ===================
+	bc = [0,0]		
 	n_samples = 0
 	n_classes = 2
 	for prd in product:
 		n_samples += 1
-		bc[int(prd)] += 1
-	print("product class counted.")
-
+		bc[int(prd)] += 1		# Count Binary Class
+	print("Class Counted")
 	print(bc)
+	print("Imbalance Ratio : %f" %(float(bc[0])/float(bc[1])))
+
 	weight = [0,0]
 	for i in range(n_classes):
-		weight[i] = n_samples / (n_classes * bc[i])
-
+		weight[i] = n_samples / (n_classes * bc[i])		# Calcuate Class Weight
 	class_weight = {0 : weight[0], 1: weight[1]}
-
+	print("Class Weight Calcuated")
 	print(class_weight)
 
-	# generate chunck
+	# ================== Formatting and Normalizing Data ==================
 	data_arr = []
 
 	for chunk in generate_chunk(rf.values, n_months):	# one customer
@@ -119,47 +154,65 @@ def rnn_data(file):
 	# normalize data
 	scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
 	data = scaler.fit_transform(data)
-	print("Data normalized")
+	print("Data Normalized")
+
+	# ====================== Splitting into sets =========================
 
 	df = pd.DataFrame(data=data)
 	#print(df.shape)		# (n_cust, n_months*n_fields)
-
-
-	print("Splitting into train, validation, test")
+	print("Splitting into Train, Validation, Test")
 	train, validate, test = train_validate_test_split(df)
 
 	train = np.reshape(train,(-1, n_months, n_fields))
 	valid = np.reshape(validate,(-1, n_months, n_fields))
 	test = np.reshape(test,(-1, n_months, n_fields))
 
+	# ====================== Resampling Training Set =======================
+
 	x_train = train[:, 0:timesteps, start_idx:n_fields]		# the history months    (n_cust, timesteps, n_fields)
 	y_train = train[:, timesteps, n_cust_infos+p]			# the month to predict  (n_cust, n_products)
 
-	# Resampling
-
 	x_train = np.reshape(x_train, (-1, timesteps*n_fields))
 	y_train = np.reshape(y_train,(-1,1))
+	y_train = np.ravel(y_train)
 
-	print(x_train.shape)
-	print(y_train.shape)
-	y_train=np.ravel(y_train)
-	print(y_train.shape)
+	print("Original Dataset: ", binary_counter(y_train))	# count of +ve and -ve labels
 
-	print("Original dataset: ", binary_counter(y_train))
-	#sm = SMOTE(random_state = 1024)
+	'''
+	# RandomOverSampler Oversampling
+	ros = RandomOverSampler(random_state = 1024)
+	x_train, y_train = ros.fit_sample(x_train, y_train)
+	print("RandomOverSampler Resampled Dataset: ", binary_counter(y_train))	
+
+	# SMOTE Oversampling
+	sm = SMOTE(random_state = 1024)
+	x_train, y_train = sm.fit_sample(x_train, y_train)
+	print("SMOTE Resampled Dataset: ", binary_counter(y_train))	
+
+	# ADASYN Oversampling
 	ada = ADASYN(random_state = 1024)
-	#x_train, y_train = sm.fit_sample(x_train, y_train)
 	x_train, y_train = ada.fit_sample(x_train, y_train)	# resampling
-	#print("SMOTE Resampled dataset: ", binary_counter(y_train))	# count of +ve and -ve labels
 	print("ADASYN Resampled dataset: ", binary_counter(y_train))
 
+	# SMOTEENN Hybrid
+	smote_enn = SMOTEENN(random_state = 1024)
+	x_train, y_train = smote_enn.fit_sample(x_train, y_train)
+	print("SMOTEENN Resampled Dataset: ", binary_counter(y_train))	
+	'''
+
+	# SMOTETomek Hybrid
+	smo_tomek = SMOTETomek(random_state = 1024)
+	x_train, y_train = smo_tomek.fit_sample(x_train, y_train)
+	print("SMOTETomek Resampled Dataset: ", binary_counter(y_train))
+
 	x_train = np.reshape(x_train, (-1, n_months-1, n_fields))
-	y_train = np.reshape(y_train,(-1,1))
-	print(y_train.shape)
+	y_train = np.reshape(y_train, (-1,1))
+
+
+	# ============ Preparing Validation and Test Set =================
 
 	x_valid = valid[:, 0:timesteps, start_idx:n_fields]
 	y_valid = valid[:, timesteps, n_cust_infos+p]
-	print(y_valid.shape)
 
 	x_test = test[:, 0:timesteps, start_idx:n_fields]
 	y_test = test[:, timesteps, n_cust_infos+p]
@@ -168,7 +221,7 @@ def rnn_data(file):
 	y_valid = to_categorical(y_valid)
 	y_test = to_categorical(y_test)
 
-	print("Data formatted.")
+	print("Data Formatted")
 
 	return x_train, y_train, x_valid, y_valid, x_test, y_test, class_weight
 
@@ -179,7 +232,7 @@ def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_wei
 
 	# ===================== Data ======================
 	np.random.seed(18657865)
-	print("Getting Data")
+	print("Getting Data for RNN")
 
 	# ===================== LSTM RNN Model ====================
 
@@ -190,7 +243,7 @@ def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_wei
 	timesteps = 16	# 16 months
 	label_dim = 2	# 1 product, 2 classes
 
-	print("Building RNN LSTM Predictor Single Model")
+	print("Building RNN LSTM Single Predictor Model")
 	# expected input data shape: (batch_size, timesteps, data_dim)
 	model = Sequential()
 	model.add(LSTM(32, return_sequences=True, input_shape=(timesteps, data_dim)))  # returns a sequence of vectors of dimension 32
@@ -201,11 +254,11 @@ def lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_wei
 	              optimizer='rmsprop',
 	              metrics=['accuracy'])
 
-	print("Start training")
+	print("Start Training")
 	model.fit(x_train, y_train,
 	          batch_size=batch_size, epochs=epochs, class_weight = class_weight,
 	          validation_data=(x_val, y_val))
-	print("Finish training")
+	print("Finish Training")
 
 	# ===================== Evaluation ====================
 	evaluate_model(model, x_test , y_test, batch_size)
@@ -215,9 +268,9 @@ BRNN LSTM
 '''
 def lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_weight):
 
-	# ===================== Data ======================
+	# ======================== Data ===========================
 	np.random.seed(18657865)
-	print("Getting Data")
+	print("Getting Data for RNN")
 
 	# ===================== LSTM RNN Model ====================
 
@@ -228,7 +281,7 @@ def lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_we
 	timesteps = 16	# 16 months
 	label_dim = 2	# 1 product, 2 classes
 
-	print("Building BRNN LSTM Predictor Model")
+	print("Building BRNN LSTM Single Predictor Model")
 	# expected input data shape: (batch_size, timesteps, data_dim)
 	model = Sequential()
 	model.add(Bidirectional(LSTM(32, return_sequences=True, kernel_initializer='random_normal'), input_shape=(timesteps, data_dim)))	# returns a sequence of vectors of dimension 32
@@ -245,11 +298,11 @@ def lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_we
 	              optimizer='adam',
 	              metrics=['accuracy'])
 
-	print("Start training")
+	print("Start Training")
 	model.fit(x_train, y_train,
 	          batch_size=batch_size, epochs=epochs, class_weight = class_weight,
 	          validation_data=(x_val, y_val))
-	print("Finish training")
+	print("Finish Training")
 
 	# ===================== Evaluation ====================
 	evaluate_model(model, x_test , y_test, batch_size)
@@ -276,7 +329,7 @@ def evaluate_model(model, x_test , y_test, batch_size):
 	f1 = f1_score(y_tb, y_pred)
 	roc = roc_auc_score(y_tb, y_pred)
 	kappa = cohen_kappa_score(y_tb, y_pred)
-	print ("F1_score = %.5f%%  ROC_AUC = %.5f%%  Cohen_Kappa = %.5f%%" %(f1, roc, kappa))
+	print ("F1_Score = %.5f%%  ROC_AUC = %.5f%%  Cohen_Kappa = %.5f%%" %(f1, roc, kappa))
 
 
 x_train, y_train, x_val, y_val, x_test, y_test, class_weight = rnn_data('senior.csv')	# Segment Data into Train, Validation, Test

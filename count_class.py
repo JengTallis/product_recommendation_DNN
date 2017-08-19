@@ -29,11 +29,15 @@ def count_class(data):
 
         #print(products)
 
+        skewness = []
         for i in range(len(products)):
+            skewness.append((float(products[i][0])/float(products[i][1])))
             print("Product %d %s " %(i, product_names[i]), end='\t')
             print("Class:   ", products[i], end='\t')
             print("Ratio neg/pos:   %f" %(float(products[i][0])/float(products[i][1])), end='\t')
             print("Sum %d" %(int(products[i][0])+int(products[i][1])))
+
+        print(skewness)
         
 
 count_class("senior.csv")
