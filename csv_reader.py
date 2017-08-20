@@ -45,7 +45,7 @@ def read_dt(data):
 				#print("Record # %d" %record_cnt)
 			field_cnt = 0
 			for field in row:
-				if record_cnt < 2 and field_cnt < 50: print("\t Field # %d \t %s" %(field_cnt,field))
+				if record_cnt < 2: print("\t Field # %d \t %s" %(field_cnt,field))
 					#print("\t Field # %d \t %s" %(field_cnt,field))
 				field_cnt += 1
 			record_cnt += 1

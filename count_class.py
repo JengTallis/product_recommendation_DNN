@@ -1,6 +1,7 @@
 # count_class.py
 
 import csv
+import statistics as stat
 
 def count_class(data):
 
@@ -36,7 +37,10 @@ def count_class(data):
             print("Class:   ", products[i], end='\t')
             print("Ratio neg/pos:   %f" %(float(products[i][0])/float(products[i][1])), end='\t')
             print("Sum %d" %(int(products[i][0])+int(products[i][1])))
-
+        print("Mean of Imbalance Ratio: %f" %(stat.mean(skewness)))
+        print("Median of Imbalance Ratio: %f" %(stat.median(skewness)))
+        print("Standard Deviation of Imbalance Ratio: %f" %(stat.stdev(skewness)))
+        print("Variance of Imbalance Ratio: %f" %(stat.variance(skewness)))
         print(skewness)
         
 
