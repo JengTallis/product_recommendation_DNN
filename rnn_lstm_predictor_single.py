@@ -115,7 +115,7 @@ def rnn_data(file):
                 "Taxes", "CreditCard", "Securities", "HomeAcnt", "Payroll",
                 "PayrollPensions", "DirectDebit"]
 
-	target_product = "HomeAcnt"		# Set target product
+	target_product = "MediumDeposit"		# Set target product
 
 	p = products.index(target_product)
 	print("Target Product : %s" %target_product)
@@ -183,12 +183,14 @@ def rnn_data(file):
 	ros = RandomOverSampler(random_state = 1024)
 	x_train, y_train = ros.fit_sample(x_train, y_train)
 	print("RandomOverSampler Resampled Dataset: ", binary_counter(y_train))	
+	'''
 
 	# SMOTE Oversampling
 	sm = SMOTE(random_state = 1024)
 	x_train, y_train = sm.fit_sample(x_train, y_train)
 	print("SMOTE Resampled Dataset: ", binary_counter(y_train))	
 
+	'''
 	# ADASYN Oversampling
 	ada = ADASYN(random_state = 1024)
 	x_train, y_train = ada.fit_sample(x_train, y_train)	# resampling
@@ -198,12 +200,12 @@ def rnn_data(file):
 	smote_enn = SMOTEENN(random_state = 1024)
 	x_train, y_train = smote_enn.fit_sample(x_train, y_train)
 	print("SMOTEENN Resampled Dataset: ", binary_counter(y_train))	
-	'''
 
 	# SMOTETomek Hybrid
 	smo_tomek = SMOTETomek(random_state = 1024)
 	x_train, y_train = smo_tomek.fit_sample(x_train, y_train)
 	print("SMOTETomek Resampled Dataset: ", binary_counter(y_train))
+	'''
 
 	x_train = np.reshape(x_train, (-1, n_months-1, n_fields))
 	y_train = np.reshape(y_train, (-1,1))
@@ -300,8 +302,14 @@ def lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test, class_we
 
 	print("Start Training")
 	model.fit(x_train, y_train,
+	          batch_size=batch_size, epochs=epochs,
+	          validation_data=(x_val, y_val))
+	'''
+	# with class weight
+	model.fit(x_train, y_train,
 	          batch_size=batch_size, epochs=epochs, class_weight = class_weight,
 	          validation_data=(x_val, y_val))
+	'''
 	print("Finish Training")
 
 	# ===================== Evaluation ====================
@@ -321,8 +329,8 @@ def evaluate_model(model, x_test , y_test, batch_size):
 	# F1 score (Harmonic mean of precision and recall)
 	# ROC
 	y_p = model.predict(x_test, batch_size = batch_size)
-	print(y_p.shape)
-	print(y_p)
+	#print(y_p.shape)
+	#print(y_p)
 	y_pred = to_binary(y_p)
 	y_tb = to_binary(y_test)
 

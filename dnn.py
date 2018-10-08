@@ -67,7 +67,7 @@ def dnn_all(file):
     rf = pd.read_csv(file)
     print("%s file read." %file)
     print("Splitting into Train, Validation and Test")
-    train, validate, test = train_validate_test_split(rf)
+    train, valid, test = train_validate_test_split(rf)
 
     x_train = train[:, 0:n_features]                # the condensed history     (n_cust, n_features)
     y_train = train[:, n_features:n_fields]         # products                  (n_cust, n_products)
@@ -100,6 +100,19 @@ def dnn_all(file):
     model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_data=(x_val, y_val))
 
     print("Finish Training")
+
+    print("Evaluation Result:")
+
+    scores = model.evaluate(x_test, y_test, batch_size = batch_size)
+    print("\n%s: %.5f%%" % (model.metrics_names[1], scores[1]*100))
+
+    y_pred = model.predict(x_test, batch_size = batch_size)
+
+    for i in range(n_products):
+        f1 = f1_score(y_test[i], y_pred[i])
+        roc = roc_auc_score(y_test[i], y_pred[i])
+        kappa = cohen_kappa_score(y_test[i], y_pred[i])
+        print ("Product %d : F1_score = %.5f%%  ROC_AUC = %.5f%%  Cohen_Kappa = %.5f%%" %(i, f1, roc, kappa))
 
 '''
 DNN Predictor for a single target product
@@ -206,5 +219,5 @@ def evaluate_model(model, x_test , y_test, batch_size):
     print ("F1_Score = %.5f%%  ROC_AUC = %.5f%%  Cohen_Kappa = %.5f%%" %(f1, roc, kappa))
 
 
-#dnn_all('data2.csv')
-dnn_single('data2.csv')
+dnn_all('data2.csv')
+#dnn_single('data2.csv')

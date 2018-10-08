@@ -14,21 +14,8 @@ python3 csv_reader.py csv_file_name.csv
 import sys
 import csv
 
-'''
-read csv file Field # 0 	 16858
-	 Field # 1 	 15889
-Record # 15
-	 Field # 0 	 16887
-	 Field # 1 	 15889
-Record # 16
-	 Field # 0 	 16918
-	 Field # 1 	 15889
-Record # 17
-	 Field # 0 	 16948
-	 Field # 1 	 15889
-print to command line output
-'''
-def read_dt(data):
+
+def read_csv(data):
 	with open(data, 'r', newline='') as rf: #, open("predict.csv", 'w', newline='') as wf:
 		record_cnt = 0
 		field_cnt = 0
@@ -55,4 +42,4 @@ def read_dt(data):
 # read file from command line argument
 # argv[0] is this file name (csv_reader.py)
 file = sys.argv[1]
-read_dt(file) 
+read_csv(file) 

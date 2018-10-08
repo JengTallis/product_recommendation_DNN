@@ -28,7 +28,7 @@ def combine(data, data2):
 		writer = csv.writer(wf, delimiter=",", quotechar='|') # csv_writer
 
 		fields = next(reader1, None)  # read skip header row, ignore return headers
-		next(reader2, None) 
+		next(reader2, None)
 
 		writer.writerow(fields) # write header row
 

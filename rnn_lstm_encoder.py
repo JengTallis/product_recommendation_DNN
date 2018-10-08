@@ -1,4 +1,4 @@
-# rnn_lstm.py
+# rnn_lstm_encoder.py
 
 import numpy as np
 import tensorflow as tf
@@ -50,15 +50,18 @@ def rnn_data(file):
 	start_idx = 0
 
 	data_arr = []
+	target_months = []
 
 	for chunk in generate_chunk(rf.values, n_months):	# one customer
+		target_month = chunk[n_months-1]	# target month's ground truth
+		target_months.append(target_month)
 		c = chunk[start_idx:start_idx+timesteps]
 		flat = np.reshape(c,(1,-1))	# one cust as (1,480)
 		data_arr.append(flat)
 
 	data = np.array(data_arr)
 	#print(data.shape)	# (504367, 1, 480)
-	data = np.reshape(data,(504367, 480))
+	data = np.reshape(data,(-1, 480))
 	#print(data.shape)	# (504367, 480)
 
 	# normalize data
@@ -121,7 +124,7 @@ def lstm_rnn(x_train, y_train, x_val, y_val, x_test, y_test):
 	timesteps = 12	# 12 months
 	label_dim = 24	# 24 products
 
-	print("Building RNN LSTM Model")
+	print("Building RNN LSTM Encoder Model")
 	# expected input data shape: (batch_size, timesteps, data_dim)
 	model = Sequential()
 	model.add(LSTM(32, return_sequences=True, input_shape=(timesteps, data_dim)))  # returns a sequence of vectors of dimension 32
@@ -164,7 +167,7 @@ def lstm_brnn(x_train, y_train, x_val, y_val, x_test, y_test):
 	timesteps = 12	# 12 months
 	label_dim = 24	# 24 products
 
-	print("Building BRNN LSTM Model")
+	print("Building BRNN LSTM Encoder Model")
 	# expected input data shape: (batch_size, timesteps, data_dim)
 	model = Sequential()
 	model.add(Bidirectional(LSTM(32, return_sequences=True), input_shape=(timesteps, data_dim)))  # returns a sequence of vectors of dimension 32
@@ -183,7 +186,7 @@ def lstm_brnn(x_train, y_train, x_val, y_val, x_test, y_test):
 
 	# ===================== Evaluation ====================
 
-	print("Evaluattion Result:")
+	print("Evaluation Result:")
 	# evaluate the model
 	scores = model.evaluate(x_test, y_test, batch_size = batch_size)
 	print("\n%s: %.5f%%" % (model.metrics_names[1], scores[1]*100))

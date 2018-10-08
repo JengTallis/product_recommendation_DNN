@@ -212,12 +212,20 @@ def evaluate_model(model, x_test , y_test, batch_size, label_dim):
 
 	for i in range(label_dim):
 		y_pred_b = to_binary(y_pred[i])
+		#f1 = f1_score(y_test[i], y_pred_b)
+		f1 = -1
+		roc = roc_auc_score(y_test[i], y_pred_b)
+		kappa = cohen_kappa_score(y_test[i], y_pred_b)
+		print ("Product %d : F1_score = %.5f%%  ROC_AUC = %.5f%%  Cohen_Kappa = %.5f%%" %(i, f1, roc, kappa))
+
+	for i in range(label_dim):
+		y_pred_b = to_binary(y_pred[i])
 		f1 = f1_score(y_test[i], y_pred_b)
 		roc = roc_auc_score(y_test[i], y_pred_b)
 		kappa = cohen_kappa_score(y_test[i], y_pred_b)
 		print ("Product %d : F1_score = %.5f%%  ROC_AUC = %.5f%%  Cohen_Kappa = %.5f%%" %(i, f1, roc, kappa))
 
 x_train, y_train, x_val, y_val, x_test, y_test = rnn_data('senior.csv')	# Segment Data into Train, Validation, Test
-#lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
-lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
+lstm_rnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
+#lstm_brnn_predictor(x_train, y_train, x_val, y_val, x_test, y_test)
 
